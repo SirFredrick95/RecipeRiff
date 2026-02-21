@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { colors, radius, tagColors } from '../theme';
 import type { TagPillProps } from '../types';
 
-export default function TagPill({ label, active, onPress }: TagPillProps): React.JSX.Element {
+export default function TagPill({ label, active, onPress }: TagPillProps) {
   const tc = tagColors[label] || { bg: 'rgba(245,158,11,0.12)', text: '#D97706' };
   return (
     <TouchableOpacity

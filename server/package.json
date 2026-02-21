@@ -1,11 +1,11 @@
 {
-  "name": "subchef-backend",
-  "version": "1.0.0",
-  "description": "SubChef recipe app backend",
-  "main": "dist/src/index.js",
+  "name": "recipe-riff-backend",
+  "version": "0.1.0",
+  "description": "Recipe Riff recipe app backend",
+  "main": "dist/src/index.ts",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/src/index.js",
+    "start": "node dist/src/index.ts",
     "dev": "tsx --watch src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "jest --verbose --forceExit --detectOpenHandles"
@@ -36,5 +36,8 @@
     "ts-jest": "^29.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0"
+  },
+    "overrides": {
+    "minimatch": "^10.0.2"
   }
 }

@@ -3,7 +3,7 @@ import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { colors } from '../theme';
 import type { SortPillProps } from '../types';
 
-export default function SortPill({ label, icon, active, onPress }: SortPillProps): React.JSX.Element {
+export default function SortPill({ label, icon, active, onPress }: SortPillProps) {
   return (
     <TouchableOpacity
       style={[styles.pill, active && styles.active]}

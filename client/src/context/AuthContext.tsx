@@ -9,7 +9,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -19,8 +19,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   async function loadStoredAuth(): Promise<void> {
     try {
+      console.log('top');
       const token = await SecureStore.getItemAsync('accessToken');
+      console.log('token :>> ', token);
       const userData = await SecureStore.getItemAsync('userData');
+      console.log('userData :>> ', userData);
       if (token && userData) {
         setUser(JSON.parse(userData) as User);
       }

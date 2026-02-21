@@ -14,7 +14,7 @@ import type { BottomTabParamList, RecipesStackParamList } from '../types/navigat
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const RecipesStack = createNativeStackNavigator<RecipesStackParamList>();
 
-function RecipesNavigator(): React.JSX.Element {
+function RecipesNavigator() {
   return (
     <RecipesStack.Navigator screenOptions={{ headerShown: false }}>
       <RecipesStack.Screen name="RecipeList" component={RecipeListScreen} />
@@ -30,7 +30,7 @@ function RecipesNavigator(): React.JSX.Element {
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-export default function AppNavigator(): React.JSX.Element {
+export default function AppNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import type { StarRatingProps } from '../types';
 
-export default function StarRating({ value = 0, onChange, size = 28 }: StarRatingProps): React.JSX.Element {
+export default function StarRating({ value = 0, onChange, size = 28 }: StarRatingProps) {
   return (
     <View style={styles.container}>
       {[1, 2, 3, 4, 5].map(star => (

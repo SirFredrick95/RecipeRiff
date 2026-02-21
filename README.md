@@ -1,4 +1,4 @@
-# SubChef
+# RecipeRiff
 
 A recipe management app with smart ingredient substitutions. React Native (Expo) frontend + Node.js/Express backend with SQLite.
 
@@ -24,7 +24,7 @@ A recipe management app with smart ingredient substitutions. React Native (Expo)
 ## Project Structure
 
 ```
-subchef-app/
+recipeRiff-app/
 ├── backend/
 │   ├── src/
 │   │   ├── index.js              # Express entry point

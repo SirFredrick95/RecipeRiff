@@ -15,7 +15,7 @@ type Props = NativeStackScreenProps<RecipesStackParamList, 'RecipeForm'>;
 
 const ALL_TAGS = ['Baking', 'Dinner', 'Quick', 'Healthy', 'Dessert', 'Spicy', 'Bread', 'Breakfast'] as const;
 
-export default function RecipeFormScreen({ navigation, route }: Props): React.JSX.Element {
+export default function RecipeFormScreen({ navigation, route }: Props) {
   const editRecipe = route.params?.recipe || null;
   const isEdit = !!editRecipe;
 

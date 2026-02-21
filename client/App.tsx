@@ -11,7 +11,7 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import AppNavigator from './src/navigation/AppNavigator';
 import { colors } from './src/theme';
 
-function RootNavigator(): React.JSX.Element {
+const RootNavigator = () => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -25,7 +25,7 @@ function RootNavigator(): React.JSX.Element {
   return user ? <AppNavigator /> : <AuthNavigator />;
 }
 
-export default function App(): React.JSX.Element {
+const App = () => {
   const [fontsLoaded] = useFonts({
     'DMSerifDisplay': require('./assets/fonts/DMSerifDisplay-Regular.ttf'),
   });
@@ -63,3 +63,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cream,
   },
 });
+
+export default App;

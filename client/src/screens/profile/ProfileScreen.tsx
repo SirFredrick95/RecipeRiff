@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { colors, spacing, radius } from '../../theme';
 import type { MenuItemProps } from '../../types';
 
-export default function ProfileScreen(): React.JSX.Element {
+export default function ProfileScreen() {
   const { user, logout } = useAuth();
 
   function handleLogout(): void {
@@ -38,13 +38,13 @@ export default function ProfileScreen(): React.JSX.Element {
           <MenuItem icon="log-out-outline" label="Sign Out" onPress={handleLogout} danger />
         </View>
 
-        <Text style={styles.version}>SubChef v1.0.0</Text>
+        <Text style={styles.version}>RecipeRiff v0.1.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function MenuItem({ icon, label, onPress, danger }: MenuItemProps): React.JSX.Element {
+function MenuItem({ icon, label, onPress, danger }: MenuItemProps) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.6}>
       <View style={[styles.menuIcon, danger && { backgroundColor: 'rgba(231,76,60,0.08)' }]}>

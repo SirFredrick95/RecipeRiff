@@ -15,7 +15,7 @@ interface AxiosLikeError {
   response?: { data?: { error?: string } };
 }
 
-export default function SignupScreen({ navigation }: Props): React.JSX.Element {
+export default function SignupScreen({ navigation }: Props) {
   const { signup } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -59,7 +59,7 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.logo}>SubChef</Text>
+            <Text style={styles.logo}>RecipeRiff</Text>
             <Text style={styles.tagline}>Create your account</Text>
           </View>
 

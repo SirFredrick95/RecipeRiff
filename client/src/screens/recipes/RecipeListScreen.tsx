@@ -20,7 +20,7 @@ const TAGS = ['All', 'Baking', 'Dinner', 'Quick', 'Healthy', 'Dessert', 'Spicy',
 
 type RecipesNavProp = NativeStackNavigationProp<RecipesStackParamList>;
 
-export default function RecipeListScreen(): React.JSX.Element {
+export default function RecipeListScreen() {
   const navigation = useNavigation<RecipesNavProp>();
   const { recipes, loading, fetchRecipes } = useRecipes();
   const [searchQuery, setSearchQuery] = useState('');

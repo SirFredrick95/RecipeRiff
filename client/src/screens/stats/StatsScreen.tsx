@@ -15,7 +15,7 @@ function getActivityLevel(count: number): number {
   return 4;
 }
 
-export default function StatsScreen(): React.JSX.Element {
+export default function StatsScreen() {
   const { stats, loading, fetchStats } = useStats();
 
   useFocusEffect(

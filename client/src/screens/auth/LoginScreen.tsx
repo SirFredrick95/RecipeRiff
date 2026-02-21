@@ -15,7 +15,7 @@ interface AxiosLikeError {
   response?: { data?: { error?: string } };
 }
 
-export default function LoginScreen({ navigation }: Props): React.JSX.Element {
+export default function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Text style={styles.logo}>SubChef</Text>
+            <Text style={styles.logo}>RecipeRiff</Text>
             <Text style={styles.tagline}>Your kitchen companion</Text>
           </View>
 

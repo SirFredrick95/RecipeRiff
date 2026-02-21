@@ -13,7 +13,9 @@ import cookLogRoutes from './routes/cookLogs';
 import statsRoutes from './routes/stats';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = (process.env.PORT || 3000) as number;
+console.log('PORT :>> ', PORT);
+console.log('typeof PORT :>> ', typeof PORT);
 
 // Ensure upload directories exist
 const uploadsDir = path.join(__dirname, '../uploads/cook-logs');
@@ -57,7 +59,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction): void 
 // Only start listener when run directly (not when imported for testing)
 if (require.main === module) {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`SubChef backend running on port ${PORT}`);
+    console.log(`RecipeRiff backend running on port ${PORT}`);
   });
 }
 

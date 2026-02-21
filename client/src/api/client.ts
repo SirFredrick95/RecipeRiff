@@ -11,7 +11,10 @@ interface QueueItem {
 }
 
 // Change this to your machine's local IP when testing on a physical device
-const BASE_URL = 'http://localhost:3001/api';
+// const BASE_URL = 'http://localhost:3001/api';
+const EXPO_PUBLIC_API_IP: string = process.env.EXPO_PUBLIC_API_IP!;
+const BASE_URL = `http://${EXPO_PUBLIC_API_IP}:3001/api`;
+console.log('BASE_URL :>> ', BASE_URL);
 
 const client = axios.create({
   baseURL: BASE_URL,

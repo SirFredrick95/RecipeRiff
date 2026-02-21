@@ -1,11 +1,11 @@
-import Database from 'better-sqlite3';
+import Database, { Database as IDatabase } from 'better-sqlite3';
 import path from 'path';
 import seedSubstitutions from './seed-substitutions';
 import type { CountResultC } from '../types';
 
-const DB_PATH = path.join(__dirname, 'subchef.db');
+const DB_PATH = path.join(__dirname, 'recipeRiff.db');
 
-const db = new Database(DB_PATH);
+const db: IDatabase = new Database(DB_PATH);
 
 // Enable WAL mode for better concurrent read performance
 db.pragma('journal_mode = WAL');

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme';
 import type { IngredientRowProps } from '../types';
 
-export default function IngredientRow({ ingredient, substitution, onPress }: IngredientRowProps): React.JSX.Element {
+export default function IngredientRow({ ingredient, substitution, onPress }: IngredientRowProps) {
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.6}>
       <View style={styles.content}>

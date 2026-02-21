@@ -7,7 +7,7 @@ import StarRating from './StarRating';
 import { colors, spacing, radius } from '../theme';
 import type { CookLogModalProps } from '../types';
 
-export default function CookLogModal({ visible, recipe, onClose, onSubmit }: CookLogModalProps): React.JSX.Element {
+export default function CookLogModal({ visible, recipe, onClose, onSubmit }: CookLogModalProps) {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
 

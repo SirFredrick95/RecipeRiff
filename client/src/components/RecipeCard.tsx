@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, radius, tagColors, recipeGradients } from '../theme';
 import type { RecipeCardProps } from '../types';
 
-export default function RecipeCard({ recipe, onPress }: RecipeCardProps): React.JSX.Element {
+export default function RecipeCard({ recipe, onPress }: RecipeCardProps) {
   const gradientIndex = (recipe.id || 0) % recipeGradients.length;
   const [color1] = recipeGradients[gradientIndex];
 

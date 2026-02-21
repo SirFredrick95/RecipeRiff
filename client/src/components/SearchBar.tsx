@@ -8,7 +8,7 @@ export default function SearchBar({
   value,
   onChangeText,
   placeholder = 'Search recipes...',
-}: SearchBarProps): React.JSX.Element {
+}: SearchBarProps) {
   return (
     <View style={styles.container}>
       <Ionicons name="search-outline" size={18} color={colors.barkLight} style={styles.icon} />

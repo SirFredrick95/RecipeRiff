@@ -26,7 +26,7 @@ interface StatComponentProps {
   label: string;
 }
 
-export default function RecipeDetailScreen({ navigation, route }: Props): React.JSX.Element {
+export default function RecipeDetailScreen({ navigation, route }: Props) {
   const recipeId = route.params?.id;
   const { getRecipe } = useRecipes();
   const { substitutions, loading: subsLoading, lookupSubstitutions } = useSubstitutions();
@@ -66,7 +66,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props): React.
       ingredient.name,
       `${ingredient.quantity || ''} ${ingredient.name}`,
       [
-        { text: "I don't have this", onPress: () => handleSubLookup(ingredient) },
+        { text: "I want to swap this", onPress: () => handleSubLookup(ingredient) },
         subs[ingredient.id] ? { text: 'Reset substitution', onPress: () => {
           const updated = { ...subs };
           delete updated[ingredient.id];
@@ -302,7 +302,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props): React.
   );
 }
 
-function Stat({ icon, label }: StatComponentProps): React.JSX.Element {
+function Stat({ icon, label }: StatComponentProps) {
   return (
     <View style={styles.stat}>
       <Ionicons name={icon as 'time-outline'} size={14} color={colors.barkLight} />
