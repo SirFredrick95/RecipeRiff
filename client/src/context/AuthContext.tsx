@@ -19,11 +19,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   async function loadStoredAuth(): Promise<void> {
     try {
-      console.log('top');
       const token = await SecureStore.getItemAsync('accessToken');
-      console.log('token :>> ', token);
       const userData = await SecureStore.getItemAsync('userData');
-      console.log('userData :>> ', userData);
       if (token && userData) {
         setUser(JSON.parse(userData) as User);
       }

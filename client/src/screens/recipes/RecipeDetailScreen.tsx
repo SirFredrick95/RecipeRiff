@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, AlertButton
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,7 +28,7 @@ interface StatComponentProps {
 
 export default function RecipeDetailScreen({ navigation, route }: Props) {
   const recipeId = route.params?.id;
-  const { getRecipe } = useRecipes();
+  const { getRecipe, deleteRecipe } = useRecipes();
   const { substitutions, loading: subsLoading, lookupSubstitutions } = useSubstitutions();
   const { logCook } = useCookLogs();
 
@@ -61,19 +61,24 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
     }
   }
 
-  function handleIngredientPress(ingredient: Ingredient): void {
+  const handleIngredientPress = (ingredient: Ingredient): void => {
     Alert.alert(
       ingredient.name,
       `${ingredient.quantity || ''} ${ingredient.name}`,
       [
         { text: "I want to swap this", onPress: () => handleSubLookup(ingredient) },
-        subs[ingredient.id] ? { text: 'Reset substitution', onPress: () => {
-          const updated = { ...subs };
-          delete updated[ingredient.id];
-          setSubs(updated);
-        }} : null,
+        subs[ingredient.id]
+          ? {
+              text: 'Reset substitution',
+              onPress: () => {
+                const updated = { ...subs };
+                delete updated[ingredient.id];
+                setSubs(updated);
+              }
+            }
+          : null,
         { text: 'Cancel', style: 'cancel' },
-      ].filter(Boolean) as Array<{ text: string; onPress?: () => void; style?: string }>
+      ].filter(Boolean) as AlertButton[]
     );
   }
 
@@ -147,6 +152,24 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const [bgColor] = recipeGradients[gradientIndex];
   const tabs: Array<'ingredients' | 'directions' | 'notes'> = ['ingredients', 'directions', 'notes'];
 
+  const handleDeleteConfirmation = () => {
+    deleteRecipe(recipeId);
+    navigation.navigate('RecipeList');
+  };
+
+  const handleDeletePress = () => {
+    Alert.alert(
+      'Are you sure you want to delete this recipe?',
+      '',
+      [
+        {
+          text: 'Yes, delete this',
+          onPress: handleDeleteConfirmation
+        }
+      ]
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.flex}>
@@ -154,6 +177,9 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
         <View style={[styles.hero, { backgroundColor: bgColor }]}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={22} color={colors.charcoal} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteBtn} onPress={handleDeletePress}>
+            <Text>DELETE</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('RecipeForm', { recipe })}>
             <Ionicons name="create-outline" size={20} color={colors.charcoal} />
@@ -322,6 +348,10 @@ const styles = StyleSheet.create({
   },
   editBtn: {
     position: 'absolute', top: 12, right: 16, width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center',
+  },
+  deleteBtn: {
+    position: 'absolute', top: 12, right: 100, width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center',
   },
   content: { flex: 1, paddingHorizontal: spacing.xl },
