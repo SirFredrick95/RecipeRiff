@@ -179,10 +179,10 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
             <Ionicons name="chevron-back" size={22} color={colors.charcoal} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteBtn} onPress={handleDeletePress}>
-            <Text>DELETE</Text>
+            <Ionicons name="trash-outline" size={20} color={colors.charcoal} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('RecipeForm', { recipe })}>
-            <Ionicons name="create-outline" size={20} color={colors.charcoal} />
+            <Ionicons name="pencil" size={20} color={colors.charcoal} />
           </TouchableOpacity>
         </View>
 
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center',
   },
   deleteBtn: {
-    position: 'absolute', top: 12, right: 100, width: 36, height: 36, borderRadius: 18,
+    position: 'absolute', top: 12, right: 64, width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center',
   },
   content: { flex: 1, paddingHorizontal: spacing.xl },
