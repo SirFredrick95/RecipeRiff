@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, ActivityIndicator, Keyboard, TouchableWithoutFeedback,
-  Animated, PanResponder, Dimensions,
+  Animated, PanResponder, Dimensions, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,6 +82,18 @@ export default function RiffModeScreen({ navigation, route }: Props) {
       },
     })
   ).current;
+
+  // Keyboard height tracking for bottom-sheet modals
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: { endCoordinates: { height: number } }) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, []);
 
   // Store original quantities so we can detect modifications and undo them
   const originalQtyMap = useRef<Map<string, string>>(
@@ -541,33 +553,60 @@ export default function RiffModeScreen({ navigation, route }: Props) {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={() => {}}>
               <Animated.View
-                style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }] }]}
+                style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
                 {...subSheetPanResponder.panHandlers}
               >
                 <View style={styles.handle} />
                 <Text style={styles.subTitle}>
-                  Swap: {activeIng?.quantity} {activeIng?.isSubstitution ? activeIng?.originalIngredientName : activeIng?.name}
+                  Swap: {activeIng?.quantity} {activeIng?.name}
                 </Text>
                 <Text style={styles.subSubtitle}>in {recipe.title}</Text>
 
-                <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   {subsLoading ? (
                     <ActivityIndicator color={colors.amberDeep} style={{ marginTop: 20 }} />
                   ) : (
                     <>
-                      {substitutions.length > 0 && (
+                      {/* Show original ingredient option when currently swapped */}
+                      {activeIng?.isSubstitution && activeIng?.originalIngredientName && (
+                        <>
+                          <Text style={styles.recLabel}>Original</Text>
+                          <TouchableOpacity
+                            style={[styles.subOption, styles.subOptionOriginal]}
+                            onPress={() => {
+                              if (activeIngIdx !== null) {
+                                undoChange(activeIngIdx);
+                                setShowSubSheet(false);
+                                setActiveIngIdx(null);
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.subOptionHeader}>
+                              <Text style={[styles.subName, styles.subNameOriginal]}>{activeIng.originalIngredientName}</Text>
+                              <View style={styles.originalBadge}>
+                                <Text style={styles.originalBadgeText}>Restore</Text>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
+                        </>
+                      )}
+
+                      {substitutions.filter(sub => sub.substituteName.toLowerCase() !== activeIng?.name.toLowerCase()).length > 0 && (
                         <>
                           <Text style={styles.recLabel}>Suggested</Text>
-                          {substitutions.map((sub, i) => (
+                          {substitutions
+                            .filter(sub => sub.substituteName.toLowerCase() !== activeIng?.name.toLowerCase())
+                            .map((sub, i) => (
                             <TouchableOpacity
                               key={sub.id}
-                              style={[styles.subOption, i === 0 && styles.subOptionBest]}
+                              style={[styles.subOption, i === 0 && !activeIng?.isSubstitution && styles.subOptionBest]}
                               onPress={() => selectSubstitution(sub)}
                               activeOpacity={0.7}
                             >
                               <View style={styles.subOptionHeader}>
                                 <Text style={styles.subName}>{sub.substituteName}</Text>
-                                {i === 0 && (
+                                {i === 0 && !activeIng?.isSubstitution && (
                                   <View style={styles.bestBadge}>
                                     <Text style={styles.bestBadgeText}>Best match</Text>
                                   </View>
@@ -627,7 +666,7 @@ export default function RiffModeScreen({ navigation, route }: Props) {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={() => {}}>
               <Animated.View
-                style={[styles.addIngSheet, { transform: [{ translateY: addIngTranslateY }] }]}
+                style={[styles.addIngSheet, { transform: [{ translateY: addIngTranslateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
                 {...addIngPanResponder.panHandlers}
               >
                 <View style={styles.handle} />
@@ -840,10 +879,14 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, marginBottom: 8,
   },
   subOptionBest: { backgroundColor: colors.sageLight, borderColor: 'rgba(139,175,124,0.3)' },
-  subOptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  subName: { fontSize: 15, fontWeight: '600', color: colors.charcoal },
+  subOptionOriginal: { backgroundColor: 'rgba(196,149,106,0.08)', borderColor: 'rgba(196,149,106,0.25)', borderStyle: 'dashed' },
+  subOptionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  subName: { fontSize: 15, fontWeight: '600', color: colors.charcoal, flex: 1, flexShrink: 1 },
+  subNameOriginal: { color: colors.clayDeep, fontStyle: 'italic' },
   bestBadge: { backgroundColor: 'rgba(139,175,124,0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
   bestBadgeText: { fontSize: 10, fontWeight: '600', color: colors.sageDeep },
+  originalBadge: { backgroundColor: 'rgba(196,149,106,0.15)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  originalBadgeText: { fontSize: 10, fontWeight: '600', color: colors.clayDeep },
   subRatio: { fontSize: 12, color: colors.sageDeep, fontWeight: '500', marginTop: 4 },
   subNote: { fontSize: 12, color: colors.barkLight, marginTop: 4 },
   customRow: {

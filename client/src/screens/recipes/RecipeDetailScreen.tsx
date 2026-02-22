@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal,
   ActivityIndicator, Alert, AlertButton, TextInput,
   TouchableWithoutFeedback, Animated, PanResponder, Dimensions,
+  Platform, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,6 +44,18 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const [activeIngredient, setActiveIngredient] = useState<Ingredient | null>(null);
   const [showCookLog, setShowCookLog] = useState(false);
   const [customSubName, setCustomSubName] = useState('');
+
+  // Keyboard height tracking for bottom-sheet modals
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: { endCoordinates: { height: number } }) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, []);
 
   // Swipe-to-dismiss for substitution sheet
   const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -388,7 +401,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
             <View style={styles.modalOverlay}>
               <TouchableWithoutFeedback onPress={() => {}}>
                 <Animated.View
-                  style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }] }]}
+                  style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
                   {...subSheetPanResponder.panHandlers}
                 >
                   <View style={styles.handle} />
@@ -397,7 +410,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
                   </Text>
                   <Text style={styles.subSubtitle}>in {recipe.title}</Text>
 
-                  <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false}>
+                  <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                     {subsLoading ? (
                       <ActivityIndicator color={colors.amberDeep} style={{ marginTop: 20 }} />
                     ) : (

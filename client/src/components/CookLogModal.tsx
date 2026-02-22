@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert,
   TouchableWithoutFeedback, Animated, PanResponder, Dimensions,
+  Platform, Keyboard, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import StarRating from './StarRating';
@@ -14,6 +15,18 @@ const DISMISS_THRESHOLD = 120;
 export default function CookLogModal({ visible, recipe, onClose, onSubmit }: CookLogModalProps) {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
+
+  // Keyboard height tracking
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: { endCoordinates: { height: number } }) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, []);
 
   const translateY = useRef(new Animated.Value(0)).current;
   const panResponder = useRef(
@@ -56,10 +69,11 @@ export default function CookLogModal({ visible, recipe, onClose, onSubmit }: Coo
         <View style={styles.overlay}>
           <TouchableWithoutFeedback onPress={() => {}}>
             <Animated.View
-              style={[styles.sheet, { transform: [{ translateY }] }]}
+              style={[styles.sheet, { transform: [{ translateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
               {...panResponder.panHandlers}
             >
               <View style={styles.handle} />
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.title}>I Made This!</Text>
               <Text style={styles.subtitle}>{recipe?.title}</Text>
 
@@ -93,6 +107,7 @@ export default function CookLogModal({ visible, recipe, onClose, onSubmit }: Coo
               <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
+              </ScrollView>
             </Animated.View>
           </TouchableWithoutFeedback>
         </View>
