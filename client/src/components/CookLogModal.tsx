@@ -1,15 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert,
+  TouchableWithoutFeedback, Animated, PanResponder, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import StarRating from './StarRating';
 import { colors, spacing, radius } from '../theme';
 import type { CookLogModalProps } from '../types';
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const DISMISS_THRESHOLD = 120;
+
 export default function CookLogModal({ visible, recipe, onClose, onSubmit }: CookLogModalProps) {
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState('');
+
+  const translateY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) translateY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > DISMISS_THRESHOLD || gestureState.vy > 0.5) {
+          Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => {
+            setRating(0);
+            setNotes('');
+            onClose();
+            translateY.setValue(0);
+          });
+        } else {
+          Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   function handleSubmit(): void {
     onSubmit({ recipeId: recipe!.id, rating: rating || null, notes: notes.trim() || null });
@@ -25,44 +52,51 @@ export default function CookLogModal({ visible, recipe, onClose, onSubmit }: Coo
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>I Made This!</Text>
-          <Text style={styles.subtitle}>{recipe?.title}</Text>
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <Animated.View
+              style={[styles.sheet, { transform: [{ translateY }] }]}
+              {...panResponder.panHandlers}
+            >
+              <View style={styles.handle} />
+              <Text style={styles.title}>I Made This!</Text>
+              <Text style={styles.subtitle}>{recipe?.title}</Text>
 
-          {/* Photo placeholder */}
-          <TouchableOpacity style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload will be available soon.')}>
-            <Ionicons name="camera-outline" size={32} color={colors.barkLighter} />
-            <Text style={styles.photoText}>Add a photo</Text>
-          </TouchableOpacity>
+              {/* Photo placeholder */}
+              <TouchableOpacity style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload will be available soon.')}>
+                <Ionicons name="camera-outline" size={32} color={colors.barkLighter} />
+                <Text style={styles.photoText}>Add a photo</Text>
+              </TouchableOpacity>
 
-          {/* Rating */}
-          <Text style={styles.label}>How was it?</Text>
-          <View style={styles.ratingWrap}>
-            <StarRating value={rating} onChange={setRating} size={32} />
-          </View>
+              {/* Rating */}
+              <Text style={styles.label}>How was it?</Text>
+              <View style={styles.ratingWrap}>
+                <StarRating value={rating} onChange={setRating} size={32} />
+              </View>
 
-          {/* Notes */}
-          <Text style={styles.label}>Notes</Text>
-          <TextInput
-            style={styles.notesInput}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Any changes? How did it turn out?"
-            placeholderTextColor={colors.barkLighter}
-            multiline
-          />
+              {/* Notes */}
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={styles.notesInput}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Any changes? How did it turn out?"
+                placeholderTextColor={colors.barkLighter}
+                multiline
+              />
 
-          {/* Actions */}
-          <TouchableOpacity style={styles.logBtn} onPress={handleSubmit} activeOpacity={0.8}>
-            <Text style={styles.logBtnText}>Log Cook</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
+              {/* Actions */}
+              <TouchableOpacity style={styles.logBtn} onPress={handleSubmit} activeOpacity={0.8}>
+                <Text style={styles.logBtnText}>Log Cook</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

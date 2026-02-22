@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, ActivityIndicator, Keyboard, TouchableWithoutFeedback,
+  Animated, PanResponder, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,61 @@ export default function RiffModeScreen({ navigation, route }: Props) {
   const [showSubSheet, setShowSubSheet] = useState(false);
   const [activeIngIdx, setActiveIngIdx] = useState<number | null>(null);
   const [customSubName, setCustomSubName] = useState('');
+
+  // Add ingredient modal state
+  const [showAddIngModal, setShowAddIngModal] = useState(false);
+  const [addIngQty, setAddIngQty] = useState('');
+  const [addIngName, setAddIngName] = useState('');
+  const addIngNameRef = useRef<TextInput>(null);
+
+  // Swipe-to-dismiss helpers
+  const SCREEN_HEIGHT = Dimensions.get('window').height;
+  const DISMISS_THRESHOLD = 120;
+
+  const subSheetTranslateY = useRef(new Animated.Value(0)).current;
+  const subSheetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) subSheetTranslateY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > DISMISS_THRESHOLD || gestureState.vy > 0.5) {
+          Animated.timing(subSheetTranslateY, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => {
+            setShowSubSheet(false);
+            setActiveIngIdx(null);
+            subSheetTranslateY.setValue(0);
+          });
+        } else {
+          Animated.spring(subSheetTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
+
+  const addIngTranslateY = useRef(new Animated.Value(0)).current;
+  const addIngPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) addIngTranslateY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > DISMISS_THRESHOLD || gestureState.vy > 0.5) {
+          Animated.timing(addIngTranslateY, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => {
+            setShowAddIngModal(false);
+            setAddIngQty('');
+            setAddIngName('');
+            addIngTranslateY.setValue(0);
+          });
+        } else {
+          Animated.spring(addIngTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   // Store original quantities so we can detect modifications and undo them
   const originalQtyMap = useRef<Map<string, string>>(
@@ -90,34 +146,24 @@ export default function RiffModeScreen({ navigation, route }: Props) {
 
   // --- Add ingredient ---
   function addIngredient(): void {
-    Alert.prompt(
-      'Add Ingredient',
-      'Enter ingredient (e.g. "1/2 cup chocolate chips")',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Add',
-          onPress: (text?: string) => {
-            if (!text?.trim()) return;
-            const match = text.trim().match(/^([\d./\s]+\s*\w*?)\s+(.+)$/);
-            let qty = '', name = text.trim();
-            if (match) {
-              qty = match[1].trim();
-              name = match[2].trim();
-            }
-            const newIng: CookModeIngredient = {
-              key: `added-${getNextKey('ing')}`,
-              quantity: qty,
-              name,
-              isSubstitution: false,
-              originalIngredientName: null,
-            };
-            setIngredients(prev => [...prev, newIng]);
-          },
-        },
-      ],
-      'plain-text',
-    );
+    setAddIngQty('');
+    setAddIngName('');
+    setShowAddIngModal(true);
+  }
+
+  function confirmAddIngredient(): void {
+    if (!addIngName.trim()) return;
+    const newIng: CookModeIngredient = {
+      key: `added-${getNextKey('ing')}`,
+      quantity: addIngQty.trim(),
+      name: addIngName.trim(),
+      isSubstitution: false,
+      originalIngredientName: null,
+    };
+    setIngredients(prev => [...prev, newIng]);
+    setShowAddIngModal(false);
+    setAddIngQty('');
+    setAddIngName('');
   }
 
   // --- Remove ingredient (move to removed section) ---
@@ -494,7 +540,10 @@ export default function RiffModeScreen({ navigation, route }: Props) {
         <TouchableWithoutFeedback onPress={() => { setShowSubSheet(false); setActiveIngIdx(null); }}>
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={() => {}}>
-              <View style={styles.subSheet}>
+              <Animated.View
+                style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }] }]}
+                {...subSheetPanResponder.panHandlers}
+              >
                 <View style={styles.handle} />
                 <Text style={styles.subTitle}>
                   Swap: {activeIng?.quantity} {activeIng?.isSubstitution ? activeIng?.originalIngredientName : activeIng?.name}
@@ -566,7 +615,70 @@ export default function RiffModeScreen({ navigation, route }: Props) {
                 >
                   <Text style={styles.subCancelText}>Cancel</Text>
                 </TouchableOpacity>
-              </View>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Add Ingredient Modal */}
+      <Modal visible={showAddIngModal} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={() => { setShowAddIngModal(false); setAddIngQty(''); setAddIngName(''); }}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <Animated.View
+                style={[styles.addIngSheet, { transform: [{ translateY: addIngTranslateY }] }]}
+                {...addIngPanResponder.panHandlers}
+              >
+                <View style={styles.handle} />
+                <Text style={styles.addIngTitle}>Add Ingredient</Text>
+                <Text style={styles.addIngSubtitle}>Enter the quantity and ingredient name</Text>
+
+                <View style={styles.addIngFields}>
+                  <View style={styles.addIngFieldGroup}>
+                    <Text style={styles.addIngFieldLabel}>Quantity</Text>
+                    <TextInput
+                      style={styles.addIngInput}
+                      value={addIngQty}
+                      onChangeText={setAddIngQty}
+                      placeholder='e.g. "1/2 cup"'
+                      placeholderTextColor={colors.barkLighter}
+                      returnKeyType="next"
+                      onSubmitEditing={() => addIngNameRef.current?.focus()}
+                      autoFocus
+                    />
+                  </View>
+                  <View style={styles.addIngFieldGroup}>
+                    <Text style={styles.addIngFieldLabel}>Ingredient</Text>
+                    <TextInput
+                      ref={addIngNameRef}
+                      style={styles.addIngInput}
+                      value={addIngName}
+                      onChangeText={setAddIngName}
+                      placeholder='e.g. "chocolate chips"'
+                      placeholderTextColor={colors.barkLighter}
+                      returnKeyType="done"
+                      onSubmitEditing={confirmAddIngredient}
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.addIngConfirmBtn, !addIngName.trim() && styles.addIngConfirmBtnDisabled]}
+                  onPress={confirmAddIngredient}
+                  disabled={!addIngName.trim()}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="add" size={18} color={colors.white} />
+                  <Text style={styles.addIngConfirmText}>Add Ingredient</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.subCancel}
+                  onPress={() => { setShowAddIngModal(false); setAddIngQty(''); setAddIngName(''); }}
+                >
+                  <Text style={styles.subCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </Animated.View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
@@ -749,4 +861,33 @@ const styles = StyleSheet.create({
   customBtnText: { color: colors.white, fontSize: 14, fontWeight: '600' },
   subCancel: { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
   subCancelText: { fontSize: 14, color: colors.barkLight },
+
+  // Add Ingredient modal
+  addIngSheet: {
+    backgroundColor: colors.cream, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: spacing.xl, paddingTop: 12,
+  },
+  addIngTitle: {
+    fontFamily: 'DMSerifDisplay', fontSize: 20, color: colors.charcoal, textAlign: 'center',
+  },
+  addIngSubtitle: {
+    fontSize: 13, color: colors.barkLight, textAlign: 'center', marginBottom: 20,
+  },
+  addIngFields: { gap: 14, marginBottom: 20 },
+  addIngFieldGroup: {},
+  addIngFieldLabel: {
+    fontSize: 12, fontWeight: '600', color: colors.barkLight,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6,
+  },
+  addIngInput: {
+    backgroundColor: colors.white, borderRadius: radius.md, padding: 14,
+    fontSize: 15, color: colors.charcoal, borderWidth: 1.5, borderColor: colors.border,
+  },
+  addIngConfirmBtn: {
+    backgroundColor: colors.sageDeep, borderRadius: radius.md, padding: 16,
+    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+    marginBottom: 4,
+  },
+  addIngConfirmBtnDisabled: { opacity: 0.4 },
+  addIngConfirmText: { color: colors.white, fontSize: 15, fontWeight: '600' },
 });

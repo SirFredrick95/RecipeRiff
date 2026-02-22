@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal,
   ActivityIndicator, Alert, AlertButton, TextInput,
+  TouchableWithoutFeedback, Animated, PanResponder, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,6 +43,32 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const [activeIngredient, setActiveIngredient] = useState<Ingredient | null>(null);
   const [showCookLog, setShowCookLog] = useState(false);
   const [customSubName, setCustomSubName] = useState('');
+
+  // Swipe-to-dismiss for substitution sheet
+  const SCREEN_HEIGHT = Dimensions.get('window').height;
+  const DISMISS_THRESHOLD = 120;
+  const subSheetTranslateY = useRef(new Animated.Value(0)).current;
+  const subSheetPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 8,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) subSheetTranslateY.setValue(gestureState.dy);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > DISMISS_THRESHOLD || gestureState.vy > 0.5) {
+          Animated.timing(subSheetTranslateY, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => {
+            setShowSubSheet(false);
+            setActiveIngredient(null);
+            setCustomSubName('');
+            subSheetTranslateY.setValue(0);
+          });
+        } else {
+          Animated.spring(subSheetTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   const loadRecipeCallback = useCallback(() => {
     loadRecipe();
@@ -357,74 +384,81 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
 
         {/* Substitution Sheet Modal */}
         <Modal visible={showSubSheet} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.subSheet}>
-              <View style={styles.handle} />
-              <Text style={styles.subTitle}>
-                Substitute for: {activeIngredient?.quantity} {activeIngredient?.name}
-              </Text>
-              <Text style={styles.subSubtitle}>in {recipe.title}</Text>
+          <TouchableWithoutFeedback onPress={() => { setShowSubSheet(false); setActiveIngredient(null); setCustomSubName(''); }}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <Animated.View
+                  style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }] }]}
+                  {...subSheetPanResponder.panHandlers}
+                >
+                  <View style={styles.handle} />
+                  <Text style={styles.subTitle}>
+                    Substitute for: {activeIngredient?.quantity} {activeIngredient?.name}
+                  </Text>
+                  <Text style={styles.subSubtitle}>in {recipe.title}</Text>
 
-              <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false}>
-                {subsLoading ? (
-                  <ActivityIndicator color={colors.amberDeep} style={{ marginTop: 20 }} />
-                ) : (
-                  <>
-                    {substitutions.length > 0 && (
+                  <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false}>
+                    {subsLoading ? (
+                      <ActivityIndicator color={colors.amberDeep} style={{ marginTop: 20 }} />
+                    ) : (
                       <>
-                        <Text style={styles.sectionLabel}>Suggested</Text>
-                        {substitutions.map((sub, i) => (
-                          <TouchableOpacity
-                            key={sub.id}
-                            style={[styles.subOption, i === 0 && styles.subOptionBest]}
-                            onPress={() => selectSubstitution(sub)}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.subOptionHeader}>
-                              <Text style={styles.subName}>{sub.substituteName}</Text>
-                              {i === 0 && (
-                                <View style={styles.bestBadge}>
-                                  <Text style={styles.bestBadgeText}>Best match</Text>
+                        {substitutions.length > 0 && (
+                          <>
+                            <Text style={styles.sectionLabel}>Suggested</Text>
+                            {substitutions.map((sub, i) => (
+                              <TouchableOpacity
+                                key={sub.id}
+                                style={[styles.subOption, i === 0 && styles.subOptionBest]}
+                                onPress={() => selectSubstitution(sub)}
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.subOptionHeader}>
+                                  <Text style={styles.subName}>{sub.substituteName}</Text>
+                                  {i === 0 && (
+                                    <View style={styles.bestBadge}>
+                                      <Text style={styles.bestBadgeText}>Best match</Text>
+                                    </View>
+                                  )}
                                 </View>
-                              )}
-                            </View>
-                            <Text style={styles.subRatio}>Ratio: {sub.ratio}x</Text>
-                            {sub.impactNote && <Text style={styles.subNote}>{sub.impactNote}</Text>}
+                                <Text style={styles.subRatio}>Ratio: {sub.ratio}x</Text>
+                                {sub.impactNote && <Text style={styles.subNote}>{sub.impactNote}</Text>}
+                              </TouchableOpacity>
+                            ))}
+                          </>
+                        )}
+
+                        <Text style={[styles.sectionLabel, { marginTop: substitutions.length > 0 ? 16 : 0 }]}>
+                          Custom
+                        </Text>
+                        <View style={styles.customSubRow}>
+                          <TextInput
+                            style={styles.customSubInput}
+                            value={customSubName}
+                            onChangeText={setCustomSubName}
+                            placeholder="Enter your own substitute..."
+                            placeholderTextColor={colors.barkLighter}
+                            returnKeyType="done"
+                            onSubmitEditing={selectCustomSubstitution}
+                          />
+                          <TouchableOpacity
+                            style={[styles.customSubBtn, !customSubName.trim() && { opacity: 0.4 }]}
+                            onPress={selectCustomSubstitution}
+                            disabled={!customSubName.trim()}
+                          >
+                            <Text style={styles.customSubBtnText}>Use</Text>
                           </TouchableOpacity>
-                        ))}
+                        </View>
                       </>
                     )}
+                  </ScrollView>
 
-                    <Text style={[styles.sectionLabel, { marginTop: substitutions.length > 0 ? 16 : 0 }]}>
-                      Custom
-                    </Text>
-                    <View style={styles.customSubRow}>
-                      <TextInput
-                        style={styles.customSubInput}
-                        value={customSubName}
-                        onChangeText={setCustomSubName}
-                        placeholder="Enter your own substitute..."
-                        placeholderTextColor={colors.barkLighter}
-                        returnKeyType="done"
-                        onSubmitEditing={selectCustomSubstitution}
-                      />
-                      <TouchableOpacity
-                        style={[styles.customSubBtn, !customSubName.trim() && { opacity: 0.4 }]}
-                        onPress={selectCustomSubstitution}
-                        disabled={!customSubName.trim()}
-                      >
-                        <Text style={styles.customSubBtnText}>Use</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </>
-                )}
-              </ScrollView>
-
-              <TouchableOpacity style={styles.subCancel} onPress={() => { setShowSubSheet(false); setActiveIngredient(null); setCustomSubName(''); }}>
-                <Text style={styles.subCancelText}>Cancel</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity style={styles.subCancel} onPress={() => { setShowSubSheet(false); setActiveIngredient(null); setCustomSubName(''); }}>
+                    <Text style={styles.subCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </TouchableWithoutFeedback>
             </View>
-          </View>
+          </TouchableWithoutFeedback>
         </Modal>
 
         <CookLogModal
