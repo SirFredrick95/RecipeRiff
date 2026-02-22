@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
   Modal, Alert, ActivityIndicator, Keyboard, TouchableWithoutFeedback,
-  Animated, PanResponder, Dimensions,
+  Animated, PanResponder, Dimensions, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -82,6 +82,18 @@ export default function RiffModeScreen({ navigation, route }: Props) {
       },
     })
   ).current;
+
+  // Keyboard height tracking for bottom-sheet modals
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = (e: { endCoordinates: { height: number } }) => setKeyboardHeight(e.endCoordinates.height);
+    const onHide = () => setKeyboardHeight(0);
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, []);
 
   // Store original quantities so we can detect modifications and undo them
   const originalQtyMap = useRef<Map<string, string>>(
@@ -541,16 +553,16 @@ export default function RiffModeScreen({ navigation, route }: Props) {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={() => {}}>
               <Animated.View
-                style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }] }]}
+                style={[styles.subSheet, { transform: [{ translateY: subSheetTranslateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
                 {...subSheetPanResponder.panHandlers}
               >
                 <View style={styles.handle} />
                 <Text style={styles.subTitle}>
-                  Swap: {activeIng?.quantity} {activeIng?.isSubstitution ? activeIng?.originalIngredientName : activeIng?.name}
+                  Swap: {activeIng?.quantity} {activeIng?.name}
                 </Text>
                 <Text style={styles.subSubtitle}>in {recipe.title}</Text>
 
-                <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false}>
+                <ScrollView style={styles.subScrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                   {subsLoading ? (
                     <ActivityIndicator color={colors.amberDeep} style={{ marginTop: 20 }} />
                   ) : (
@@ -627,7 +639,7 @@ export default function RiffModeScreen({ navigation, route }: Props) {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={() => {}}>
               <Animated.View
-                style={[styles.addIngSheet, { transform: [{ translateY: addIngTranslateY }] }]}
+                style={[styles.addIngSheet, { transform: [{ translateY: addIngTranslateY }], paddingBottom: Math.max(spacing.xl, keyboardHeight) }]}
                 {...addIngPanResponder.panHandlers}
               >
                 <View style={styles.handle} />
