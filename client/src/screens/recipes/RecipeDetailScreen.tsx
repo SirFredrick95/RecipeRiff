@@ -35,7 +35,7 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
   const { getRecipe, deleteRecipe } = useRecipes();
   const { substitutions, loading: subsLoading, lookupSubstitutions } = useSubstitutions();
   const { logCook } = useCookLogs();
-  const { variations, loading: variationsLoading, fetchVariations, getVariation } = useVariations();
+  const { variations, loading: variationsLoading, fetchVariations, getVariation, renameVariation } = useVariations();
 
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +60,33 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
     } finally {
       setVariationLoading(false);
     }
+  }
+
+  function handleVariationLongPress(v: VariationListItem): void {
+    if (!v.isOwner) return;
+    Alert.prompt(
+      'Rename Variation',
+      'Enter a new name for this variation:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Save',
+          onPress: async (newLabel?: string) => {
+            if (!newLabel?.trim()) return;
+            try {
+              await renameVariation(v.id, newLabel.trim());
+              if (activeVariation?.id === v.id) {
+                setActiveVariation(prev => prev ? { ...prev, label: newLabel.trim() } : prev);
+              }
+            } catch {
+              Alert.alert('Error', 'Failed to rename variation.');
+            }
+          },
+        },
+      ],
+      'plain-text',
+      v.label
+    );
   }
 
   // Keyboard height tracking for bottom-sheet modals
@@ -313,12 +340,16 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={22} color={colors.charcoal} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteBtn} onPress={handleDeletePress}>
-            <Ionicons name="trash-outline" size={20} color={colors.charcoal} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('RecipeForm', { recipe })}>
-            <Ionicons name="pencil" size={20} color={colors.charcoal} />
-          </TouchableOpacity>
+          {recipe.isOwner && (
+            <>
+              <TouchableOpacity style={styles.deleteBtn} onPress={handleDeletePress}>
+                <Ionicons name="trash-outline" size={20} color={colors.charcoal} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('RecipeForm', { recipe })}>
+                <Ionicons name="pencil" size={20} color={colors.charcoal} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }}>
@@ -453,9 +484,21 @@ export default function RecipeDetailScreen({ navigation, route }: Props) {
                     style={[styles.variationRow, activeVariation?.id === v.id && styles.variationRowActive]}
                     activeOpacity={0.7}
                     onPress={() => handleVariationPress(v)}
+                    onLongPress={() => handleVariationLongPress(v)}
                   >
                     <View style={styles.variationInfo}>
-                      <Text style={styles.variationLabel}>{v.label}</Text>
+                      <View style={styles.variationLabelRow}>
+                        <Text style={styles.variationLabel} numberOfLines={1}>{v.label}</Text>
+                        {v.isOwner ? (
+                          <View style={styles.ownerBadge}>
+                            <Text style={styles.ownerBadgeText}>By you</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.communityBadge}>
+                            <Text style={styles.communityBadgeText}>By {v.creatorName}</Text>
+                          </View>
+                        )}
+                      </View>
                       <View style={styles.variationMeta}>
                         <Text style={styles.variationDate}>
                           {new Date(v.createdAt + 'Z').toLocaleDateString()}
@@ -726,4 +769,13 @@ const styles = StyleSheet.create({
   variationIngQty: { fontSize: 14, fontWeight: '500', color: colors.barkLight, minWidth: 50 },
   variationIngName: { fontSize: 14, color: colors.charcoal },
   variationOrigLabel: { fontSize: 11, color: colors.clay, fontStyle: 'italic', marginTop: 2 },
+  variationLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ownerBadge: {
+    backgroundColor: 'rgba(245,158,11,0.15)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6,
+  },
+  ownerBadgeText: { fontSize: 10, fontWeight: '600', color: colors.amberDeep },
+  communityBadge: {
+    backgroundColor: 'rgba(45,41,38,0.06)', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 6,
+  },
+  communityBadgeText: { fontSize: 10, fontWeight: '500', color: colors.barkLight },
 });
